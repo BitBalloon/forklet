@@ -40,6 +40,14 @@ saveChanges = (cb) ->
   xhr.setRequestHeader('Content-Type', 'application/vnd.bitballoon.v1.raw')
   xhr.send(document.body.parentElement.outerHTML)
 
+coverElement = (element, container) ->
+  rect = element.getBoundingClientRect()
+  container.style.position = "absolute"
+  container.style.top = "#{rect.top + window.scrollY}px"
+  container.style.left = "#{rect.left + window.scrollX}px"
+  container.style.width = "#{rect.width}px"
+  container.style.height = "#{rect.height}px"
+
 enterEditingMode = ->
   if !(token || document.location.protocol == "file:")
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
@@ -60,11 +68,46 @@ enterEditingMode = ->
       saveChanges (err) ->
         if err then console.log(err) else console.log("Saved")
 
+    imgs = document.querySelectorAll("img")
+    for img in imgs
+      do (img) ->
+
+        container    = document.createElement("div")
+        input        = document.createElement("input")
+        input.type   = "file"
+        input.accept = "image/*"
+        input.style.opacity = "0"
+        input.style.display = "block"
+        input.style.width   = "100%"
+        input.style.height  = "100%"
+
+        container.style.opacity = "0"
+        container.style.background = "#eee"
+        container.style.zIndex = "999999"
+        container.appendChild(input)
+        document.body.appendChild(container)
+        input.addEventListener "mouseover", (e) ->
+          container.style.opacity = "0.5"
+
+        input.addEventListener "mouseout", (e) ->
+          container.style.opacity = "0"
+
+        input.addEventListener "change", (e) ->
+          console.log("files: %o", input.files[0])
+          fileReader = new FileReader()
+
+          fileReader.onload = (e) ->
+            console.log(e)
+            img.src = e.target.result
+
+          fileReader.readAsDataURL(input.files[0])
+
+        img.onload = -> coverElement(img, container)
+        coverElement(img, container)
+
 
 checkForEditingMode = () ->
-  console.log("Checking for editing mode")
   if document.location.hash == "#admin" || document.location.hash == "#/admin"
-    console.log("enterEditingMode")
     enterEditingMode()
 
 
