@@ -5,7 +5,7 @@ removeScriptTagFromDom = ->
   while target.childNodes.length && target.lastChild.nodeType == 1 # find last HTMLElement child node
     target = target.lastChild;
   # target is now the script element
-  target.parentNode.removeChild(target)
+  target.parentElement.removeChild(target)
 
 removeScriptTagFromDom()
 
@@ -22,7 +22,8 @@ if token
   document.location.hash = "admin"
 
 saveChanges = (cb) ->
-  document.designMode = false
+  console.log("Saving changes")
+  document.designMode = "off"
   document.body.removeChild(uiEl)
 
   xhr = new XMLHttpRequest()
@@ -37,14 +38,16 @@ saveChanges = (cb) ->
   xhr.open("PUT", resourceHost + '/sites/' + document.location.host + '/files/index.html', true)
   xhr.setRequestHeader('Authorization', "Bearer " + token)
   xhr.setRequestHeader('Content-Type', 'application/vnd.bitballoon.v1.raw')
-  xhr.send(document.body.parent.outerHTML)
+  xhr.send(document.body.parentElement.outerHTML)
 
 enterEditingMode = ->
   if !(token || document.location.protocol == "file:")
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
     document.location.href = authUrl
   else
-    document.designMode = true
+    console.log "Design mode"
+    document.designMode = "on"
+    console.log(document.designMode)
     uiEl = document.createElement("div")
     button = document.createElement("button")
     button.innerHTML = "Save"
@@ -52,12 +55,18 @@ enterEditingMode = ->
     uiEl.setAttribute("style", "position: fixed; right: 20px; bottom: 20px;")
 
     document.body.appendChild(uiEl)
+    uiEl.addEventListener "click", (e) ->
+      e.preventDefault()
+      saveChanges (err) ->
+        if err then console.log(err) else console.log("Saved")
 
 
-if document.location.hash == "#admin"
-  enterEditingMode()
+checkForEditingMode = () ->
+  console.log("Checking for editing mode")
+  if document.location.hash == "#admin" || document.location.hash == "#/admin"
+    console.log("enterEditingMode")
+    enterEditingMode()
 
 
-
-
-
+window.addEventListener "hashchange", ((e) -> checkForEditingMode()), true
+checkForEditingMode()
