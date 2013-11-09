@@ -1,7 +1,10 @@
 uiEl = null
 highlightContainer = null
 highlightElements = {}
+contentBeforeEdit = null
 currentElement = null
+changes = {}
+
 
 removeScriptTagFromDom = ->
   target = document.documentElement
@@ -10,41 +13,79 @@ removeScriptTagFromDom = ->
   # target is now the script element
   target.parentElement.removeChild(target)
 
+
 removeScriptTagFromDom()
+
 
 authHost     = "https://www.bitballoon.com"
 resourceHost = "https://www.bitballoon.com/api/v1"
 endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
 
+
 extractToken = (hash) ->
   match = hash.match(/access_token=(\w+)/);
   match && match[1]
+
 
 token = extractToken(document.location.hash)
 if token
   document.location.hash = "admin"
 
+
 saveChanges = (cb) ->
-  document.body.removeChild(uiEl)
+  if document.activeElement == currentElement
+    blurHandler()
+
+  patch = []
+
+  return console.log("Saving changes %o", changes) unless token
+
+  for own el of changes
+    patch.push
+      op: "replace",
+      path: el,
+      value: changes[el]
 
   xhr = new XMLHttpRequest()
-  xhr.onload = ->
-    document.body.appendChild(uiEl)
-    if xhr.status == 200
-      cb(null)
-    else
-      cb("Error saving to BitBalloon")
 
-  xhr.open("PUT", resourceHost + '/sites/' + document.location.host + '/files/index.html', true)
+  xhr.onload = -> console.log("Saved")
+
+  xhr.open("PATCH", "#{resourceHost}/sites/#{document.location.host}/files#{document.location.pathname}", true)
   xhr.setRequestHeader('Authorization', "Bearer " + token)
-  xhr.setRequestHeader('Content-Type', 'application/vnd.bitballoon.v1.raw')
-  xhr.send(document.body.parentElement.outerHTML)
+  xhr.setRequestHeader('Content-Type', 'application/json-patch+json')
+  xhr.send(JSON.stringify(patch))
+
 
 position = (element, top, left, width, height) ->
   element.style.top    = "#{top}px"
   element.style.left   = "#{left}px"
   element.style.width  = "#{width}px"
   element.style.height = "#{height}px"
+
+
+uniqueSelector = (element) ->
+  return unless element instanceof Element
+
+  path = []
+  while element && element.nodeType == Node.ELEMENT_NODE
+    selector = element.nodeName.toLowerCase()
+    if element.id
+      selector += "#" + element.id
+    else
+      sibling = element
+      nth = 1
+      while sibling.nodeType == Node.ELEMENT_NODE && sibling = sibling.previousElementSibling
+        nth++
+      if nth > 1
+        selector += ":nth-child(#{nth})"
+
+    path.unshift(selector)
+    if !element.id && (element.parentNode && element.parentNode != document.body)
+      element = element.parentNode
+    else
+      element = null
+  path.join(" > ")
+
 
 highlightElement = (element) ->
   rect = element.getBoundingClientRect()
@@ -56,10 +97,12 @@ highlightElement = (element) ->
   position(highlightElements.lft, top, rect.left - 3, 0, rect.height)
   highlightContainer.display = "block"
 
+
 coverElement = (element, container) ->
   rect = element.getBoundingClientRect()
   container.style.position = "absolute"
   position(container, rect.top + window.scrollY, rect.left + window.scrollX, rect.width, rect.height)
+
 
 isUIElement = (element) ->
   while element
@@ -67,16 +110,27 @@ isUIElement = (element) ->
     element = element.parentElement
   false
 
+
 hoverHandler = (e) ->
   return if isUIElement(e.target)
   highlightElement(e.target)
 
+
 editHandler = (e) ->
-  currentElement.contentEditable = false if currentElement
+  currentElement.removeAttribute("contentEditable") if currentElement
   currentElement = e.target
+  contentBeforeEdit = currentElement.outerHTML
   currentElement.contentEditable = true
   currentElement.focus()
-  console.log("Edit element!")
+
+
+blurHandler = (e) ->
+  return unless currentElement
+  currentElement.removeAttribute("contentEditable")
+  unless contentBeforeEdit == currentElement.outerHTML
+    changes[uniqueSelector(e.target)] = currentElement.outerHTML
+  contentBeforeEdit = null
+
 
 addUIElement = ->
   uiEl = document.createElement("div")
@@ -90,6 +144,7 @@ addUIElement = ->
     e.preventDefault()
     saveChanges (err) ->
       if err then console.log(err) else console.log("Saved")
+
 
 addHighlightElements = ->
   highlightContainer = document.createElement("div")
@@ -110,6 +165,7 @@ addHighlightElements = ->
     highlightElements[id] = el
 
   document.body.appendChild(highlightContainer)
+
 
 bindImgElements = ->
   imgs = document.querySelectorAll("img")
@@ -138,17 +194,16 @@ bindImgElements = ->
         container.style.opacity = "0"
 
       input.addEventListener "change", (e) ->
-        console.log("files: %o", input.files[0])
         fileReader = new FileReader()
 
         fileReader.onload = (e) ->
-          console.log(e)
           img.src = e.target.result
 
         fileReader.readAsDataURL(input.files[0])
 
       img.onload = -> coverElement(img, container)
       coverElement(img, container)
+
 
 bindTextElements = ->
   elements = document.querySelectorAll("h1, h2, h3, h4, h5, h6, div, p, a, span, small, blockquote, label, cite, li")
@@ -159,6 +214,7 @@ bindTextElements = ->
 
     element.addEventListener('mouseover', hoverHandler, false)
     element.addEventListener('click', editHandler, false)
+    element.addEventListener('blur', blurHandler, false)
 
 
 enterEditingMode = ->
@@ -170,6 +226,7 @@ enterEditingMode = ->
     addHighlightElements()
     bindImgElements()
     bindTextElements()
+
 
 checkForEditingMode = () ->
   if document.location.hash == "#admin" || document.location.hash == "#/admin"
