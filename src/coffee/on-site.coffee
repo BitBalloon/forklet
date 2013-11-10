@@ -300,7 +300,11 @@ enterEditingMode = ->
 checkForEditingMode = () ->
   if document.location.hash == "#admin" || document.location.hash == "#/admin"
     enterEditingMode()
+    doOverlay()
 
+doOverlay = ->
+  overlayDiv = document.getElementById("forkletOverlay")
+  overlayDiv.style.display = 'block'
 
 window.addEventListener "hashchange", ((e) -> checkForEditingMode()), true
 checkForEditingMode()
