@@ -8,10 +8,15 @@ window.forkletActive = true
 
 authHost     = "https://www.bitballoon.com"
 resourceHost = "https://www.bitballoon.com/api/v1"
+scriptEndpoint = "<script src='http://on-site-snippet.bitballoon.com/js/on-site.js'></script>"
+apiToken = "9dda61b2f010b674a787cb102f119423c817b609930596f66835a91b200cf9cd"
+
 # authHost     = "http://www.bitballoon.lo:9393"
 # resourceHost = "http://www.bitballoon.lo:9393/api/v1"
+# scriptEndpoint = "<script src='http://on-site-scripts.bitballoon.lo:9393/js/on-site.js'></script>"
+# apiToken = "009084e8f8ddf052592b0d112b4384e5a3e80106172d9a3a1fee0439299c09ae"
 endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
-apiToken = "9dda61b2f010b674a787cb102f119423c817b609930596f66835a91b200cf9cd"
+
 absolutePath = /^((?:[\w_-]+:)?\/\/|data:)/
 
 for el in document.querySelectorAll("script[src^='chrome-extension://'], link[href^='chrome-extension://']")
@@ -26,6 +31,7 @@ str2ab = (str) ->
   for char, i in str
     bufView[i] = str.charCodeAt(i)
   buf
+
 
 doctype = ->
   node = document.doctype;
@@ -77,7 +83,7 @@ waitForReady = (site, cb) ->
 
 
 pageContent = document.documentElement.outerHTML
-pageContent += "<script src='http://on-site-snippet.bitballoon.com/js/on-site.js'></script>"
+pageContent += scriptEndpoint
 
 overlay = document.createElement("div")
 overlay.style.position   = "fixed"
@@ -129,7 +135,7 @@ createSite = ->
       #   title: "On site editing"
       #   general: "<script src='http://on-site-snippet.bitballoon.com/js/on-site.js'></script>"
       # }]
-      processors: []
+      processors: ["forms"]
     })
   }, (err, xhr) ->
     return alert("Failed to created site") if err

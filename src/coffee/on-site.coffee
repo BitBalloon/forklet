@@ -19,6 +19,14 @@ removeScriptTagFromDom = ->
 
 removeScriptTagFromDom()
 
+doctype = ->
+  node = document.doctype;
+  html = "<!DOCTYPE #{node.name}" +
+         (node.publicId ? ' PUBLIC "' + node.publicId + '"' : '') +
+         (!node.publicId && node.systemId ? ' SYSTEM' : '') +
+         (node.systemId ? ' "' + node.systemId + '"' : '') +
+         '>';
+
 
 authHost     = "https://www.bitballoon.com"
 resourceHost = "https://www.bitballoon.com/api/v1"
@@ -84,10 +92,16 @@ saveChanges = (cb) ->
   file = currentHTMLFile()
 
   waitForReadyToSave ->
-    apiCall "PATCH", "/files/#{file.path}", {
-      body: JSON.stringify(patch)
-      contentType: 'application/json-patch+json'
+    uiEl.parentNode.removeChild(uiEl)
+    highlightContainer.parentNode.removeChild(highlightContainer)
+
+    apiCall "PUT", "/files/#{file.path}", {
+      body: "#{doctype()}\n#{document.documentElement.outerHTML}"
+      contentType: 'application/octet-stream'
     }, (err, xhr) ->
+      changes = {}
+      document.body.appendChild(uiEl)
+      document.body.appendChild(highlightContainer)
       console.log("Saved %o", xhr)
 
 
