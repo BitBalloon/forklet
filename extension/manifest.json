@@ -22,27 +22,10 @@
     "_default_popup": "src/browser_action/browser_action.html"
   },
   "permissions": [
-    "fileBrowserHandler",
-    "https://www.bitballoo.com/*",
-    "pageCapture",
-    ""
+    "http://*/",
+    "https://*/"
   ],
-  "content_scripts": [
-    {
-      "matches": [
-        "https://www.google.com/*"
-      ],
-      "css": [
-        "src/inject/inject.css"
-      ]
-    },
-    {
-      "matches": [
-        "https://www.google.com/*"
-      ],
-      "js": [
-        "src/inject/inject.js"
-      ]
-    }
+  "web_accessible_resources": [
+    "src/spinner.html"
   ]
 }

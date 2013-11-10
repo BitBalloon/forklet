@@ -9,17 +9,30 @@ module.exports = (grunt) ->
         files:
           'build/js/on-site.js': 'src/coffee/on-site.coffee'
           'build/js/image-editor.js': 'src/coffee/image-editor.js'
-          'extension/src/browser_action/fork.js': 'extension/src/browser_action/fork.coffee'
-          'extension/src/bg/background.js': 'extension/src/bg/background.coffee'
+          'build/extension/src/browser_action/fork.js': 'extension/src/browser_action/fork.coffee'
+          'build/extension/src/bg/background.js': 'extension/src/bg/background.coffee'
+          'build/extension/src/bg/pageslurper.js': 'extension/src/bg/pageslurper.coffee'
 
 
     copy:
       main:
-        cwd: 'src/'
-        expand: true
-        src: ['**/*.html']
-        dest: 'build/'
-        filter: 'isFile'
+        files: [
+          {
+            cwd: 'src/'
+            expand: true
+            src: ['**/*.html']
+            dest: 'build/on-site'
+            filter: 'isFile'
+          },
+          {
+            cwd: 'extension/'
+            expand: true
+            src: ['**/*.html', '**/*.*.js', '**/*.json', '**/*.png']
+            dest: 'build/extension'
+            filter: 'isFile'
+          }
+        ]
+
 
     watch:
       src:

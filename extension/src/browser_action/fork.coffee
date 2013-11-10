@@ -8,7 +8,6 @@ chrome.tabs.getCurrent (tab) ->
 # pageHTML = document.documentElement.innerHTML
 
 # allPageScripts = document.querySelectorAll('script[src]')
-
 # allPageStyles = document.querySelectorAll('link[rel="stylesheet"]')
 
 # localElements = (elements, attr) ->
