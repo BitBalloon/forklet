@@ -7,8 +7,8 @@ module.exports = (grunt) ->
     coffee:
       compile:
         files:
-          'build/js/on-site.js': 'src/coffee/on-site.coffee'
-          'build/js/image-editor.js': 'src/coffee/image-editor.js'
+          'build/on-site/js/on-site.js': 'src/coffee/on-site.coffee'
+          'build/on-site/js/image-editor.js': 'src/coffee/image-editor.js'
           'build/extension/src/browser_action/fork.js': 'extension/src/browser_action/fork.coffee'
           'build/extension/src/bg/background.js': 'extension/src/bg/background.coffee'
           'build/extension/src/bg/pageslurper.js': 'extension/src/bg/pageslurper.coffee'

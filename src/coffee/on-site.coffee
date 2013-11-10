@@ -56,6 +56,7 @@ apiCall = (method, url, options, cb) ->
     xhr.setRequestHeader('Content-Type', )
   if options.body then xhr.send(options.body) else xhr.send()
 
+
 currentHTMLFile = ->
   path = document.location.pathname
   console.log("Finding currentHTMLFile - files: %o - path: %s", files, path)
@@ -64,6 +65,7 @@ currentHTMLFile = ->
     if file.path.match(/\.html?$/)
       filePath = file.path.replace(/\.html?$/, '')
       return file if filePath == path || (path + "index" == filePath || path + "home" == filePath)
+
 
 saveChanges = (cb) ->
   if document.activeElement == currentElement
@@ -124,10 +126,10 @@ highlightElement = (element) ->
   rect = element.getBoundingClientRect()
   top  = window.scrollY + rect.top
 
-  position(highlightElements.top, top, rect.left + 3, rect.width - 6, 0)
-  position(highlightElements.rgt, top, rect.left + rect.width + 3, 0, rect.height)
-  position(highlightElements.bottom, top + rect.height, rect.left + 3, rect.width - 6, 0)
-  position(highlightElements.lft, top, rect.left - 3, 0, rect.height)
+  position(highlightElements.top, top, rect.left + 2, rect.width - 4, 0)
+  position(highlightElements.rgt, top, rect.left + rect.width + 2, 0, rect.height)
+  position(highlightElements.bottom, top + rect.height, rect.left + 2, rect.width - 4, 0)
+  position(highlightElements.lft, top, rect.left - 2, 0, rect.height)
   highlightContainer.display = "block"
 
 
@@ -210,13 +212,18 @@ addHighlightElements = ->
     margin: 0;
     padding:0;
     border: 0;
-    outline: 3px solid rgba(17,42,244,0.5);
+    outline: 2px solid rgba(17,42,244,0.5);
   '''
   for id in ["lft", "rgt", "top", "bottom"]
     el = document.createElement("div")
     el.setAttribute("style", baseStyle)
     highlightContainer.appendChild(el)
     highlightElements[id] = el
+
+  highlightElements["top"].style.outlineColor = "rgba(255,65,100,0.5)"
+  highlightElements["rgt"].style.outlineColor = "rgba(0, 145, 247, 0.5)"
+  highlightElements["bottom"].style.outlineColor = "rgba(255, 210, 70, 0.5)"
+  highlightElements["lft"].style.outlineColor = "rgba(57, 221, 127, 0.5)"
 
   document.body.appendChild(highlightContainer)
 
