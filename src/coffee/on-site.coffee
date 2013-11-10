@@ -1,9 +1,12 @@
-uiEl = null
+uiEl               = null
 highlightContainer = null
-highlightElements = {}
-contentBeforeEdit = null
-currentElement = null
-changes = {}
+highlightElements  = {}
+contentBeforeEdit  = null
+currentElement     = null
+changes            = {}
+files              = null
+readyToSave        = false
+imagesToSave       = []
 
 
 removeScriptTagFromDom = ->
@@ -19,6 +22,8 @@ removeScriptTagFromDom()
 
 authHost     = "https://www.bitballoon.com"
 resourceHost = "https://www.bitballoon.com/api/v1"
+# authHost     = "http://www.bitballoon.lo:9393"
+# resourceHost = "http://www.bitballoon.lo:9393/api/v1"
 endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
 
 
@@ -31,6 +36,34 @@ token = extractToken(document.location.hash)
 if token
   document.location.hash = "admin"
 
+
+waitForReadyToSave = (cb) ->
+  return cb() if readyToSave
+  setTimeout (-> waitForReadyToSave(cb)), 200
+
+
+apiCall = (method, url, options, cb) ->
+  cb = options unless cb
+
+  xhr = new XMLHttpRequest()
+
+  xhr.onload = -> cb(null, xhr)
+  xhr.onerror = -> cb(xhr, null)
+
+  xhr.open(method, "#{resourceHost}/sites/#{document.location.host}#{url}", true)
+  xhr.setRequestHeader('Authorization', "Bearer " + token)
+  if open.contentType
+    xhr.setRequestHeader('Content-Type', )
+  if options.body then xhr.send(options.body) else xhr.send()
+
+currentHTMLFile = ->
+  path = document.location.pathname
+  console.log("Finding currentHTMLFile - files: %o - path: %s", files, path)
+  return path if path.match(/\/.html?$/)
+  for file in files
+    if file.path.match(/\.html?$/)
+      filePath = file.path.replace(/\.html?$/, '')
+      return file if filePath == path || (path + "index" == filePath || path + "home" == filePath)
 
 saveChanges = (cb) ->
   if document.activeElement == currentElement
@@ -46,14 +79,14 @@ saveChanges = (cb) ->
       path: el,
       value: changes[el]
 
-  xhr = new XMLHttpRequest()
+  file = currentHTMLFile()
 
-  xhr.onload = -> console.log("Saved")
-
-  xhr.open("PATCH", "#{resourceHost}/sites/#{document.location.host}/files#{document.location.pathname}", true)
-  xhr.setRequestHeader('Authorization', "Bearer " + token)
-  xhr.setRequestHeader('Content-Type', 'application/json-patch+json')
-  xhr.send(JSON.stringify(patch))
+  waitForReadyToSave ->
+    apiCall "PATCH", "/files/#{file.path}", {
+      body: JSON.stringify(patch)
+      contentType: 'application/json-patch+json'
+    }, (err, xhr) ->
+      console.log("Saved %o", xhr)
 
 
 position = (element, top, left, width, height) ->
@@ -122,6 +155,7 @@ editHandler = (e) ->
   contentBeforeEdit = currentElement.outerHTML
   currentElement.contentEditable = true
   currentElement.focus()
+  highlightElement.style.display = "none"
 
 
 blurHandler = (e) ->
@@ -131,6 +165,26 @@ blurHandler = (e) ->
     changes[uniqueSelector(e.target)] = currentElement.outerHTML
   contentBeforeEdit = null
 
+
+imageUploaded = (img, input) ->
+  file = input.files[0]
+  path = "/uploads/#{file.name}"
+  changes[uniqueSelector(img)] = img.outerHTML.replace(/src=((?:"[^"]+")|(?:'[^']+'))/, "src=\"#{path}\"")
+
+  apiCall "PUT", "/files#{path}", {body: file, contentType: "application/octet-stream"}, (err, xhr) ->
+    imagesToSave.pop()
+    readyToSave = true unless imagesToSave.length
+
+
+  dataURLReader = new FileReader()
+
+  dataURLReader.onload = (e) ->
+    readyToSave = false
+    imagesToSave.push(path)
+
+    img.src = dataURLReader.result
+
+  dataURLReader.readAsDataURL(file)
 
 addUIElement = ->
   uiEl = document.createElement("div")
@@ -189,17 +243,15 @@ bindImgElements = ->
       input.addEventListener "mouseover", (e) ->
         highlightElement(input)
         container.style.opacity = "0.5"
+      , false
 
       input.addEventListener "mouseout", (e) ->
         container.style.opacity = "0"
+      , false
 
       input.addEventListener "change", (e) ->
-        fileReader = new FileReader()
-
-        fileReader.onload = (e) ->
-          img.src = e.target.result
-
-        fileReader.readAsDataURL(input.files[0])
+        imageUploaded(img, input)
+      , false
 
       img.onload = -> coverElement(img, container)
       coverElement(img, container)
@@ -217,6 +269,15 @@ bindTextElements = ->
     element.addEventListener('blur', blurHandler, false)
 
 
+getFileListing = ->
+  if token
+    apiCall "GET", "/files", (err, xhr) ->
+      files = JSON.parse(xhr.responseText)
+      readyToSave = true
+  else
+    readyToSave = true
+
+
 enterEditingMode = ->
   if !(token || document.location.protocol == "file:")
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
@@ -226,6 +287,7 @@ enterEditingMode = ->
     addHighlightElements()
     bindImgElements()
     bindTextElements()
+    getFileListing()
 
 
 checkForEditingMode = () ->
