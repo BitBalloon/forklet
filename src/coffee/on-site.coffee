@@ -2,7 +2,7 @@ uiEl = null
 
 removeScriptTagFromDom = ->
   target = document.documentElement
-  while target.childNodes.length && target.lastChild.nodeType == 1 # find last HTMLElement child node
+  while target.childNodes.length and target.lastChild.nodeType is 1 # find last HTMLElement child node
     target = target.lastChild;
   # target is now the script element
   target.parentElement.removeChild(target)

@@ -9,6 +9,9 @@ module.exports = (grunt) ->
         files:
           'build/js/on-site.js': 'src/coffee/on-site.coffee'
           'build/js/image-editor.js': 'src/coffee/image-editor.js'
+          'extension/src/browser_action/fork.js': 'extension/src/browser_action/fork.coffee'
+          'extension/src/bg/background.js': 'extension/src/bg/background.coffee'
+
 
     copy:
       main:
@@ -20,7 +23,7 @@ module.exports = (grunt) ->
 
     watch:
       src:
-        files: ['src/**/*'],
+        files: ['src/**/*','extension/src/**/*'],
         tasks: ['default']
 
   # Grunt coffee
