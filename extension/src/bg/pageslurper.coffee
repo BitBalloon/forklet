@@ -15,6 +15,7 @@ apiToken = "9dda61b2f010b674a787cb102f119423c817b609930596f66835a91b200cf9cd"
 # resourceHost = "http://www.bitballoon.lo:9393/api/v1"
 # scriptEndpoint = "<script src='http://on-site-scripts.bitballoon.lo:9393/js/on-site.js'></script>"
 # apiToken = "009084e8f8ddf052592b0d112b4384e5a3e80106172d9a3a1fee0439299c09ae"
+
 endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
 
 absolutePath = /^((?:[\w_-]+:)?\/\/|data:)/
@@ -24,14 +25,6 @@ for el in document.querySelectorAll("script[src^='chrome-extension://'], link[hr
 
 for a in document.querySelectorAll("a[href]")
   a.setAttribute("href", a.href) unless a.getAttribute("href").match(absolutePath)
-
-str2ab = (str) ->
-  buf = new ArrayBuffer(str.length*2) # 2 bytes for each char
-  bufView = new Uint16Array(buf)
-  for char, i in str
-    bufView[i] = str.charCodeAt(i)
-  buf
-
 
 doctype = ->
   node = document.doctype;
@@ -51,7 +44,6 @@ ajax = (method, path, options, cb) ->
   xhr = new XMLHttpRequest
 
   xhr.onload = ->
-    console.log("Request done %o", xhr)
     cb(null, xhr)
   xhr.onerror = ->
     if options.retries > 0 && (method == "PUT" || method == "GET") && xhr.status != 422
@@ -118,15 +110,17 @@ sourceAttr =
 files = []
 fetchedFiles = []
 
+redirectWhenReady = (site) ->
+  waitForReady site, (err, site) ->
+    document.location.href = site.url + "#access_token=#{apiToken}"
+
 createSite = ->
   fetchedFiles.push({path: "/index.html", content: pageContent})
 
+  # Create a manifest of all the file paths and their sha1 digests
   manifest = {}
   for file in fetchedFiles
     manifest[file.path] = sha1.hash(file.content).toString()
-
-  console.log("All files fetced: %o", manifest)
-  console.log(fetchedFiles)
 
   ajax "POST", "#{resourceHost}/sites", {
     headers: {"Content-Type": "application/json", "Authorization": "Bearer " + apiToken}
@@ -136,7 +130,7 @@ createSite = ->
       #   title: "On site editing"
       #   general: "<script src='http://on-site-snippet.bitballoon.com/js/on-site.js'></script>"
       # }]
-      processors: ["forms"]
+      processors: []
     })
   }, (err, xhr) ->
     return alert("Failed to created site") if err
@@ -146,14 +140,13 @@ createSite = ->
     uploaded = []
     toUpload = []
 
+    # BitBalloon will let us know what files we need to upload
+    # Find all files in our manifest that we need to push
     for sha in site.required
       for file in fetchedFiles
-        console.log("Checking %o - %o - %o", sha, file.path, manifest[file.path])
         toUpload.push(file) if manifest[file.path] == sha
 
-    console.log("Required %o", site.required)
-    console.log("Uploading %o", toUpload)
-
+    #
     if toUpload.length
       for file in toUpload
         do (file) ->
@@ -165,11 +158,9 @@ createSite = ->
 
             uploaded.push(file)
             if uploaded.length == toUpload.length
-              waitForReady site, (err, site) ->
-                document.location.href = site.url + "#access_token=#{apiToken}"
+              redirectWhenReady(site)
     else
-      waitForReady site, (err, site) ->
-        document.location.href = site.url + "#access_token=#{apiToken}"
+      redirectWhenReady(site)
 
 
 host = "#{document.location.protocol}//#{document.location.hostname}#{if document.location.port then ":#{document.location.port}" else ""}"

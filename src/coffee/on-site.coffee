@@ -1,13 +1,14 @@
 uiEl               = null
 highlightContainer = null
 highlightElements  = {}
+welcomeOverlay     = null
 contentBeforeEdit  = null
 currentElement     = null
 changes            = {}
 files              = null
 readyToSave        = false
 imagesToSave       = []
-
+token              = null
 
 # removeScriptTagFromDom = ->
 #   target = document.documentElement
@@ -15,9 +16,9 @@ imagesToSave       = []
 #     target = target.lastChild;
 #   # target is now the script element
 #   target.parentElement.removeChild(target)
-
-
+#
 # removeScriptTagFromDom()
+
 
 doctype = ->
   node = document.doctype;
@@ -35,14 +36,45 @@ resourceHost = "https://www.bitballoon.com/api/v1"
 endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
 
 
-extractToken = (hash) ->
-  match = hash.match(/access_token=(\w+)/);
-  match && match[1]
+showWelcomeOverlay = ->
+  src = "http://on-site-snippet.bitballoon.com/img/forklet-overlay.png"
+  overlay = document.createElement("div")
+  overlay.id = "forklet-overlay"
+  img = document.createElement("img")
+  img.src = src
+  img.style.width = "100%"
+  img.style.maxWidth = "870px"
+  img.style.border = "none"
+  img.style.outline = "none"
+  img.style.display = "block"
+  img.style.margin = "0 auto"
+  overlay.appendChild(img)
+  overlay.style.position   = "fixed"
+  overlay.style.top        = "0px"
+  overlay.style.width      = "100%"
+  overlay.style.height     = "100%"
+  overlay.style.background = "linear-gradient(rgba(15, 15, 15, 0.91), rgba(17, 16, 16, 0.78))"
+  overlay.style.zIndex     = "99999"
+  welcomeOverlay = overlay
+  document.body.appendChild(overlay)
+  overlay.addEventListener "click", ->
+    document.body.removeChild(overlay)
+    welcomeOverlay = null
+  , false
 
 
-token = extractToken(document.location.hash)
-if token
-  document.location.hash = "admin"
+extractToken = ->
+  match = document.location.hash.match(/access_token=(\w+)/);
+  token = match && match[1]
+  if token
+    showWelcomeOverlay()
+    localStorage.setItem("forklettoken", token)
+  else
+    token = localStorage.getItem("forklettoken")
+  document.location.hash = "" if token
+  token
+
+extractToken()
 
 
 waitForReadyToSave = (cb) ->
@@ -67,7 +99,6 @@ apiCall = (method, url, options, cb) ->
 
 currentHTMLFile = ->
   path = document.location.pathname
-  console.log("Finding currentHTMLFile - files: %o - path: %s", files, path)
   return path if path.match(/\/.html?$/)
   for file in files
     if file.path.match(/\.html?$/)
@@ -137,6 +168,7 @@ uniqueSelector = (element) ->
 
 
 highlightElement = (element) ->
+  return if welcomeOverlay
   rect = element.getBoundingClientRect()
   top  = window.scrollY + rect.top
 
@@ -155,7 +187,7 @@ coverElement = (element, container) ->
 
 isUIElement = (element) ->
   while element
-    return true if element == uiEl || element == highlightContainer
+    return true if element == uiEl || element == highlightContainer || element == welcomeOverlay
     element = element.parentElement
   false
 
@@ -166,6 +198,10 @@ hoverHandler = (e) ->
 
 
 editHandler = (e) ->
+  e.preventDefault()
+
+  return if welcomeOverlay
+
   currentElement.removeAttribute("contentEditable") if currentElement
   currentElement = e.target
   contentBeforeEdit = currentElement.outerHTML
@@ -245,6 +281,7 @@ addHighlightElements = ->
 bindImgElements = ->
   imgs = document.querySelectorAll("img")
   for img in imgs
+    continue if isUIElement(img)
     do (img) ->
 
       container    = document.createElement("div")
@@ -262,6 +299,7 @@ bindImgElements = ->
       container.appendChild(input)
       document.body.appendChild(container)
       input.addEventListener "mouseover", (e) ->
+        return if welcomeOverlay
         highlightElement(input)
         container.style.opacity = "0.5"
       , false
@@ -300,25 +338,14 @@ getFileListing = ->
 
 
 enterEditingMode = ->
-  if !(token || document.location.protocol == "file:")
+  if !(token || document.location.protocol == "file:") && document.location.hash == "#login"
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
     document.location.href = authUrl
-  else
+  else if token
     addUIElement()
     addHighlightElements()
     bindImgElements()
     bindTextElements()
     getFileListing()
 
-
-checkForEditingMode = () ->
-  if document.location.hash == "#admin" || document.location.hash == "#/admin"
-    enterEditingMode()
-    doOverlay()
-
-doOverlay = ->
-  overlayDiv = document.getElementById("forkletOverlay")
-  overlayDiv.style.display = 'block'
-
-window.addEventListener "hashchange", ((e) -> checkForEditingMode()), true
-checkForEditingMode()
+enterEditingMode()
