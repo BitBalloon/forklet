@@ -85,6 +85,7 @@ waitForReady = (site, cb) ->
 pageContent = document.documentElement.outerHTML
 pageContent += scriptEndpoint
 
+
 overlay = document.createElement("div")
 overlay.style.position   = "fixed"
 overlay.style.top        = "0px"
@@ -118,7 +119,7 @@ files = []
 fetchedFiles = []
 
 createSite = ->
-  fetchedFiles.push({path: "/index.html", content: "#{doctype()}\n#{pageContent}"})
+  fetchedFiles.push({path: "/index.html", content: pageContent})
 
   manifest = {}
   for file in fetchedFiles

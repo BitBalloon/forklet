@@ -9,15 +9,15 @@ readyToSave        = false
 imagesToSave       = []
 
 
-removeScriptTagFromDom = ->
-  target = document.documentElement
-  while target.childNodes.length and target.lastChild.nodeType is 1 # find last HTMLElement child node
-    target = target.lastChild;
-  # target is now the script element
-  target.parentElement.removeChild(target)
+# removeScriptTagFromDom = ->
+#   target = document.documentElement
+#   while target.childNodes.length and target.lastChild.nodeType is 1 # find last HTMLElement child node
+#     target = target.lastChild;
+#   # target is now the script element
+#   target.parentElement.removeChild(target)
 
 
-removeScriptTagFromDom()
+# removeScriptTagFromDom()
 
 doctype = ->
   node = document.doctype;
@@ -96,7 +96,7 @@ saveChanges = (cb) ->
     highlightContainer.parentNode.removeChild(highlightContainer)
 
     apiCall "PUT", "/files/#{file.path}", {
-      body: "#{doctype()}\n#{document.documentElement.outerHTML}"
+      body: document.documentElement.outerHTML
       contentType: 'application/octet-stream'
     }, (err, xhr) ->
       changes = {}
