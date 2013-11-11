@@ -154,18 +154,23 @@ createSite = ->
     console.log("Required %o", site.required)
     console.log("Uploading %o", toUpload)
 
-    for file in toUpload
-      do (file) ->
-        ajax "PUT", "#{resourceHost}/sites/#{site.id}/files#{file.path}", {
-          headers: {"Content-Type": "application/octet-stream", "Authorization": "Bearer " + apiToken}
-          body: file.content
-        }, (err, xhr) ->
-          return console.log("Error uploading file") if err
+    if toUpload.length
+      for file in toUpload
+        do (file) ->
+          ajax "PUT", "#{resourceHost}/sites/#{site.id}/files#{file.path}", {
+            headers: {"Content-Type": "application/octet-stream", "Authorization": "Bearer " + apiToken}
+            body: file.content
+          }, (err, xhr) ->
+            return console.log("Error uploading file") if err
 
-          uploaded.push(file)
-          if uploaded.length == toUpload.length
-            waitForReady site, (err, site) ->
-              document.location.href = site.url + "#access_token=#{apiToken}"
+            uploaded.push(file)
+            if uploaded.length == toUpload.length
+              waitForReady site, (err, site) ->
+                document.location.href = site.url + "#access_token=#{apiToken}"
+    else
+      waitForReady site, (err, site) ->
+        document.location.href = site.url + "#access_token=#{apiToken}"
+
 
 host = "#{document.location.protocol}//#{document.location.hostname}#{if document.location.port then ":#{document.location.port}" else ""}"
 
