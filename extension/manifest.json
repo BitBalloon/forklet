@@ -1,6 +1,6 @@
 {
   "name": "Forklet",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "manifest_version": 2,
   "description": "Fork any webpage and share your edits",
   "homepage_url": "http://forklet.com",
