@@ -74,6 +74,7 @@ extractToken = ->
   document.location.hash = "" if token
   token
 
+
 extractToken()
 
 
@@ -349,3 +350,4 @@ enterEditingMode = ->
     getFileListing()
 
 enterEditingMode()
+document.addEventListener("hashchange", enterEditingMode, false)
