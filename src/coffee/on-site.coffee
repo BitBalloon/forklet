@@ -243,7 +243,7 @@ addUIElement = ->
   button = document.createElement("button")
   button.innerHTML = "Save"
   uiEl.appendChild(button)
-  uiEl.setAttribute("style", "position: fixed; right: 20px; bottom: 20px;")
+  uiEl.setAttribute("style", "position: fixed; z-index: 2147483647; right: 20px; bottom: 20px;")
 
   document.body.appendChild(uiEl)
   uiEl.addEventListener "click", (e) ->
