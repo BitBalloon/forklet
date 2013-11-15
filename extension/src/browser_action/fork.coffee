@@ -1,45 +1,46 @@
-console.log("Hello, world")
-chrome.tabs.getCurrent (tab) ->
-  console.log("Current tab %o", tab)
-  chrome.pageCapture.saveAsMHTML {tabId: tab.id}, (allTheThings) ->
-    console.log("We have all the things!")
-    console.log(allTheThings)
+token        = null
+clientId     = "078f2156c3d0199090910612185881a68eef7fa71fe47ef1cea6d6fc4fb76d56"
+authHost     = "https://www.bitballoon.com"
+resourceHost = "https://www.bitballoon.com/api/v1"
+redirectURI  = "https://www.bitballoon.com/robots.txt"
+# authHost     = "http://www.bitballoon.lo:9393"
+# resourceHost = "http://www.bitballoon.lo:9393/api/v1"
+endUserAuthorizationEndpoint = authHost + "/oauth/authorize"
 
-# pageHTML = document.documentElement.innerHTML
+tokenInUrl = ->
+  match = document.location.hash.match(/access_token=(\w+)/);
+  token = match && match[1]
 
-# allPageScripts = document.querySelectorAll('script[src]')
-# allPageStyles = document.querySelectorAll('link[rel="stylesheet"]')
+tokenInLocalStorage = ->
+  token = localStorage.getItem("forklettoken")
 
-# localElements = (elements, attr) ->
-#   for element in allPageStyles when element.getAttribute(attr).match(/^(https?:)?\/\//)
-#     element.getAttribute("href")
+callForkInPopup = ->
+  tab = localStorage.getItem("tabId")
+  localStorage.removeItem("tabId")
+  tabId = parseInt(tab, 10)
+  chrome.tabs.update tabId, {active: true}, ->
+    chrome.extension.getBackgroundPage().fork(tabId)
+    closeWindow()
 
-# localPageStyles  = localElements(allPageStyles, "href")
-# localPageScripts = localElements(allPageScripts, "src")
+closeWindow = ->
+  window.open('', '_self', '')
+  window.close()
 
+openAuthTab = ->
+  chrome.tabs.query {active: true, currentWindow: true}, (tabs) ->
+    localStorage.setItem("tabId", tabs[0].id)
+    authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + clientId + "&redirect_uri=" + encodeURIComponent(redirectURI)
+    chrome.tabs.create({url: authUrl})
 
+fork = ->
+  chrome.tabs.query {active: true, currentWindow: true}, (tabs) ->
+    setTimeout(closeWindow, 100)
+    chrome.extension.getBackgroundPage().fork(tabs[0].id)
 
-
-# for ref in localPageStyles
-#   oReq = new XMLHttpRequest()
-#   oReq.onload = reqListener
-#   oReq.open("get", ref, true)
-#   oReq.send()
-
-
-# filesInTheSite = [
-#   "/index.html": sha1.hash(pageHTML)
-#   "/css/style.css": "body { ... } "
-# ]
-
-
-
-# files = {
-#   "/index.html": "1235354564345563534",
-#   "/css/style.css": "t45424525252"
-# }
-
-# ["1235354564345563534", "t45424525252"]
-
-
-
+if tokenInUrl()
+  localStorage.setItem("forklettoken", token)
+  callForkInPopup()
+else if tokenInLocalStorage()
+  fork()
+else
+  openAuthTab()

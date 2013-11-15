@@ -19,14 +19,23 @@
   "browser_action": {
     "default_icon": "icons/icon19.png",
     "default_title": "Forklet",
-    "_default_popup": "src/browser_action/browser_action.html"
+    "default_popup": "src/browser_action/browser_action.html"
   },
+
   "permissions": [
     "pageCapture",
     "http://*/",
     "https://*/"
   ],
   "web_accessible_resources": [
-    "src/spinner.html"
+    "src/spinner.html",
+    "src/browser_action/browser_action.html"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.bitballoon.com/robots.txt*"],
+      "js": ["src/browser_action/oauth_done.js"],
+      "run_at": "document_start"
+    }
   ]
 }

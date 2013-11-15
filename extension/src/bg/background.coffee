@@ -48,13 +48,13 @@ injectPageSlurper = (tabId) ->
   chrome.tabs.executeScript(tabId, {file: "src/bg/pageslurper.js"})
 
 
-chrome.browserAction.onClicked.addListener (tab) ->
+window.fork = (tabId) ->
   # Don't try to slurp a page we're already slurping. No inception here!
-  chrome.tabs.executeScript tab.id, {code: "window.forkletActive"}, (result) ->
+  chrome.tabs.executeScript tabId, {code: "window.forkletActive"}, (result) ->
     return if result[0]
 
     # Get an MHTML blob with all the files in the page
-    chrome.pageCapture.saveAsMHTML {tabId: tab.id}, (blob) ->
+    chrome.pageCapture.saveAsMHTML {tabId: tabId}, (blob) ->
 
       reader = new FileReader
       reader.onload = ->
@@ -63,7 +63,7 @@ chrome.browserAction.onClicked.addListener (tab) ->
         done    = []
 
         # Get the full location of the tab we're slurping
-        chrome.tabs.executeScript tab.id, {code: '"" + document.location.protocol + "//" + document.location.hostname + (document.location.port ? ":" + document.location.port : "")'}, (result) ->
+        chrome.tabs.executeScript tabId, {code: '"" + document.location.protocol + "//" + document.location.hostname + (document.location.port ? ":" + document.location.port : "")'}, (result) ->
 
           host = result[0]
           for file in files
@@ -72,16 +72,16 @@ chrome.browserAction.onClicked.addListener (tab) ->
               process.push(file)
 
           # Inject the page slurper if we don't need to inline any images
-          return injectPageSlurper(tab.id) unless process.length
+          return injectPageSlurper(tabId) unless process.length
 
           # Inline all external images as data URIs
           for file in process
             code = '(function() { var els = document.querySelectorAll(\'img[src="' + file.location + '"]\'); var src = "data:' + file.contentType + ';base64,' + file.content.replace(/\n/mg, '\\n').replace(/\r/mg, '\\r') + '"; for (var i = 0; i<els.length; i++) { els[i].src = src }})()'
-            chrome.tabs.executeScript tab.id, {
+            chrome.tabs.executeScript tabId, {
               code: code
             }, (result) ->
               done.push(file)
               if done.length == process.length
-                injectPageSlurper(tab.id)
+                injectPageSlurper(tabId)
 
       reader.readAsBinaryString(blob)
