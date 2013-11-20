@@ -6,10 +6,10 @@
 
 window.forkletActive = true
 
-authHost     = "https://www.bitballoon.com"
-resourceHost = "https://www.bitballoon.com/api/v1"
+authHost       = "https://www.bitballoon.com"
+resourceHost   = "https://www.bitballoon.com/api/v1"
 scriptEndpoint = "<script src='http://on-site-snippet.bitballoon.com/js/on-site.js'></script>"
-apiToken = "9dda61b2f010b674a787cb102f119423c817b609930596f66835a91b200cf9cd"
+apiToken       = ForkLetApiToken
 
 # authHost     = "http://www.bitballoon.lo:9393"
 # resourceHost = "http://www.bitballoon.lo:9393/api/v1"

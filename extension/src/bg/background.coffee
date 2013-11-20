@@ -45,8 +45,9 @@ parseMHTML = (mhtml) ->
 
 
 injectPageSlurper = (tabId) ->
-  chrome.tabs.executeScript(tabId, {file: "src/bg/pageslurper.js"})
-
+  apiToken = localStorage.getItem("forklettoken")
+  chrome.tabs.executeScript tabId, {code: "ForkLetApiToken = '#{apiToken}'"}, ->
+    chrome.tabs.executeScript(tabId, {file: "src/bg/pageslurper.js"})
 
 window.fork = (tabId) ->
   # Don't try to slurp a page we're already slurping. No inception here!
