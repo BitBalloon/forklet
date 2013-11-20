@@ -20,6 +20,7 @@ token              = null
 # removeScriptTagFromDom()
 
 
+
 doctype = ->
   node = document.doctype;
   html = "<!DOCTYPE #{node.name}" +
@@ -239,12 +240,23 @@ imageUploaded = (img, input) ->
 
   dataURLReader.readAsDataURL(file)
 
-addUIElement = ->
+addForkletFooter = ->
+  footer = document.createElement("div")
+  message = document.createElement("p")
+  message.innerHTML = "Forked with <a href='http://www.forklet.com' style='text-decoration:none'>Forklet <img src='http://5c4cf848f6454dc02ec8-c49fe7e7355d384845270f4a7a0a7aa1.r53.cf2.rackcdn.com/c2e3e04f-78e6-4bfc-9626-fcad0d8d179d/icon128.png' title='forklet' width='20' height='20'
+    style='border-radius: 3px; position: relative; top: 7px; left: 4px' /></a>"
+  footer.appendChild(message)
+  footer.setAttribute("style", "position: fixed; font-size: 10px; z-index: 2147483646; right: 15px; bottom: 5px; font-family: sans-serif")
+  document.body.appendChild(footer)
+
+
+addSaveButton = ->
   uiEl = document.createElement("div")
   button = document.createElement("button")
   button.innerHTML = "Save"
+  button.setAttribute("style", "padding: 1em 1.5em;")
   uiEl.appendChild(button)
-  uiEl.setAttribute("style", "position: fixed; z-index: 2147483647; right: 20px; bottom: 20px;")
+  uiEl.setAttribute("style", "position: fixed; z-index: 2147483647; right: 10px; bottom: 37px;")
 
   document.body.appendChild(uiEl)
   uiEl.addEventListener "click", (e) ->
@@ -343,7 +355,8 @@ enterEditingMode = ->
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
     document.location.href = authUrl
   else if token
-    addUIElement()
+    addForkletFooter()
+    addSaveButton()
     addHighlightElements()
     bindImgElements()
     bindTextElements()
