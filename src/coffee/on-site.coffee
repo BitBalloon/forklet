@@ -259,11 +259,8 @@ imageUploaded = (img, input) ->
 
 addForkletFooter = ->
   waterMarkEl = document.createElement("div")
-  message = document.createElement("p")
-  message.innerHTML = "Forked with <a href='http://www.forklet.com' style='text-decoration:none'>Forklet <img src='http://5c4cf848f6454dc02ec8-c49fe7e7355d384845270f4a7a0a7aa1.r53.cf2.rackcdn.com/c2e3e04f-78e6-4bfc-9626-fcad0d8d179d/icon128.png' title='forklet' width='20' height='20'
-    style='border-radius: 3px; position: relative; top: 7px; left: 4px' /></a>"
-  waterMarkEl.appendChild(message)
-  waterMarkEl.setAttribute("style", "position: fixed; font-size: 10px; z-index: 2147483646; right: 15px; bottom: 5px; font-family: sans-serif")
+  waterMarkEl.innerHTML = "<a href='http://www.forklet.com'><img src='http://5c4cf848f6454dc02ec8-c49fe7e7355d384845270f4a7a0a7aa1.r53.cf2.rackcdn.com/93ff51aa-a231-48b9-aabb-4ac8a6c35950/forklet-watermark.png' title='Forklet' width='150' height='23'/></a>"
+  waterMarkEl.setAttribute("style", "position: fixed; font-size: 10px; z-index: 2147483646; right: 10px; bottom: 5px; font-family: sans-serif")
   document.body.appendChild(waterMarkEl)
 
 
