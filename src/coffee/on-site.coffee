@@ -1,4 +1,6 @@
+waterMarkEl        = null
 uiEl               = null
+button             = null
 highlightContainer = null
 highlightElements  = {}
 welcomeOverlay     = null
@@ -9,6 +11,9 @@ files              = null
 readyToSave        = false
 imagesToSave       = []
 token              = null
+buttonColor        = "rgb(57, 221, 127)"
+buttonHoverColor   = "rgb(10, 175, 80)"
+buttonSaveColor    = "rgb(204, 211, 207)"
 
 # removeScriptTagFromDom = ->
 #   target = document.documentElement
@@ -18,7 +23,6 @@ token              = null
 #   target.parentElement.removeChild(target)
 #
 # removeScriptTagFromDom()
-
 
 doctype = ->
   node = document.doctype;
@@ -83,6 +87,17 @@ waitForReadyToSave = (cb) ->
   setTimeout (-> waitForReadyToSave(cb)), 200
 
 
+waitForReady = (siteId, deployId, cb) ->
+  apiCall "GET", "/sites/#{siteId}/deploys/#{deployId}", {fullPath: true}, (err, xhr) ->
+    return cb(err) if err
+
+    site = JSON.parse(xhr.responseText)
+    if site.state == "current"
+      cb(null, site)
+    else
+      setTimeout((-> waitForReady(siteId, deployId, cb)), 1000)
+
+
 apiCall = (method, url, options, cb) ->
   cb = options unless cb
 
@@ -91,7 +106,9 @@ apiCall = (method, url, options, cb) ->
   xhr.onload = -> cb(null, xhr)
   xhr.onerror = -> cb(xhr, null)
 
-  xhr.open(method, "#{resourceHost}/sites/#{document.location.host}#{url}", true)
+  url = if options.fullPath then "#{resourceHost}#{url}"  else "#{resourceHost}/sites/#{document.location.host}#{url}"
+
+  xhr.open(method, url, true)
   xhr.setRequestHeader('Authorization', "Bearer " + token)
   if open.contentType
     xhr.setRequestHeader('Content-Type', )
@@ -111,30 +128,31 @@ saveChanges = (cb) ->
   if document.activeElement == currentElement
     blurHandler()
 
-  patch = []
-
   return console.log("Saving changes %o", changes) unless token
-
-  for own el of changes
-    patch.push
-      op: "replace",
-      path: el,
-      value: changes[el]
 
   file = currentHTMLFile()
 
   waitForReadyToSave ->
     uiEl.parentNode.removeChild(uiEl)
     highlightContainer.parentNode.removeChild(highlightContainer)
+    waterMarkEl.parentNode.removeChild(waterMarkEl)
+    body = document.documentElement.outerHTML
+    button.innerHTML = "Saving..."
+    button.setAttribute("disabled", "disabled")
+    document.body.appendChild(uiEl)
+    document.body.appendChild(highlightContainer)
+    document.body.appendChild(waterMarkEl)
 
     apiCall "PUT", "/files/#{file.path}", {
-      body: document.documentElement.outerHTML
+      body: body
       contentType: 'application/octet-stream'
     }, (err, xhr) ->
-      changes = {}
-      document.body.appendChild(uiEl)
-      document.body.appendChild(highlightContainer)
-      console.log("Saved %o", xhr)
+      if err
+        button.innerHTML = "Error :("
+      else
+        file = JSON.parse(xhr.responseText)
+        waitForReady file.site_id, file.deploy_id, ->
+          button.innerHTML = "Save"
 
 
 position = (element, top, left, width, height) ->
@@ -188,7 +206,7 @@ coverElement = (element, container) ->
 
 isUIElement = (element) ->
   while element
-    return true if element == uiEl || element == highlightContainer || element == welcomeOverlay
+    return true if element == uiEl || element == highlightContainer || element == welcomeOverlay || element == waterMarkEl
     element = element.parentElement
   false
 
@@ -239,18 +257,40 @@ imageUploaded = (img, input) ->
 
   dataURLReader.readAsDataURL(file)
 
-addUIElement = ->
+addForkletFooter = ->
+  waterMarkEl = document.createElement("div")
+  waterMarkEl.innerHTML = "<a href='http://www.forklet.com'><img src='http://5c4cf848f6454dc02ec8-c49fe7e7355d384845270f4a7a0a7aa1.r53.cf2.rackcdn.com/93ff51aa-a231-48b9-aabb-4ac8a6c35950/forklet-watermark.png' title='Forklet' width='150' height='23'/></a>"
+  waterMarkEl.setAttribute("style", "position: fixed; font-size: 10px; z-index: 2147483646; right: 10px; bottom: 5px; font-family: sans-serif")
+  document.body.appendChild(waterMarkEl)
+
+
+colorRegexp = (color) -> new RegExp(color.replace(/\(/, '\\(').replace(/\)/, '\\)'))
+
+addSaveButton = ->
   uiEl = document.createElement("div")
   button = document.createElement("button")
   button.innerHTML = "Save"
+  button.setAttribute("style", "padding: 10px 20px !important; background: rgb(57, 221, 127) !important; " +
+                               "box-sizing: border-box !important; border: none !important; color: #fff !important; " +
+                               "font-family: \"HelveticaNeue-Light\", \"Helvetica Neue Light\", \"Helvetica Neue\", Helvetica, Arial, \"Lucida Grande\", sans-seri !important;" +
+                               "font-size: 16px !important; font-weight: bold !important; border-radius: 20px !important;  cursor: pointer !important")
   uiEl.appendChild(button)
-  uiEl.setAttribute("style", "position: fixed; z-index: 2147483647; right: 20px; bottom: 20px;")
+  uiEl.setAttribute("style", "position: fixed; z-index: 2147483647; right: 10px; bottom: 37px;")
 
   document.body.appendChild(uiEl)
   uiEl.addEventListener "click", (e) ->
     e.preventDefault()
     saveChanges (err) ->
       if err then console.log(err) else console.log("Saved")
+  , false
+  button.addEventListener "mouseenter", (e) ->
+    regepx = colorRegexp(buttonColor)
+    button.setAttribute("style", button.getAttribute("style").replace(regepx, buttonHoverColor))
+  , false
+  button.addEventListener "mouseleave", (e) ->
+    regepx = colorRegexp(buttonHoverColor)
+    button.setAttribute("style", button.getAttribute("style").replace(regepx, buttonColor))
+  , false
 
 
 addHighlightElements = ->
@@ -321,6 +361,7 @@ bindTextElements = ->
   elements = document.querySelectorAll("h1, h2, h3, h4, h5, h6, div, p, a, span, small, blockquote, label, cite, li")
 
   for element in elements
+    continue if isUIElement(element)
     textNodes = (node for node in element.childNodes when node.nodeType == node.TEXT_NODE && node.textContent.replace(/\s/))
     continue unless textNodes.length
 
@@ -343,11 +384,13 @@ enterEditingMode = ->
     authUrl = endUserAuthorizationEndpoint + "?response_type=token&client_id=" + document.location.host + "&redirect_uri=" + window.location
     document.location.href = authUrl
   else if token
-    addUIElement()
+    addSaveButton()
     addHighlightElements()
     bindImgElements()
     bindTextElements()
     getFileListing()
+
+addForkletFooter()
 
 enterEditingMode()
 document.addEventListener("hashchange", enterEditingMode, false)
